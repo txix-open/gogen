@@ -4,6 +4,11 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+const (
+	JsonFormat = "json"
+	CsvFormat  = "csv"
+)
+
 type Config struct {
 	TotalCount   int      `validate:"gt=0"`
 	SharedFields []Field  `validate:"dive"`
@@ -11,9 +16,10 @@ type Config struct {
 }
 
 type Entity struct {
-	Name   string // TODO: remove? not used
-	Field  Field
-	Config EntityConfig
+	Name            string // TODO: remove? not used
+	Field           Field
+	Config          EntityConfig
+	csvColumnsCache []string
 }
 
 type EntityConfig struct {
@@ -22,6 +28,7 @@ type EntityConfig struct {
 	// 1..100; if == 0, default is 100
 	Rate         int    `validate:"gte=0,lte=100"`
 	Filepath     string `validate:"required"`
+	OutputFormat string
 	currentCount int64
 }
 

@@ -83,11 +83,21 @@ func newWorker(fieldsCh <-chan map[string]interface{}, wg *sync.WaitGroup, cfg *
 
 	for fields := range fieldsCh {
 		for i := range cfg.Entities {
-			val, generated := cfg.Entities[i].Generate(fields)
+			entity := cfg.Entities[i]
+			val, generated := entity.Generate(fields)
 			if generated {
-				buf, err := writeBuffer(val)
+				var (
+					buf *bytes.Buffer
+					err error
+				)
+				switch entity.Config.OutputFormat {
+				case CsvFormat:
+					buf, err = writeCsv(val, entity.CsvColumns())
+				default:
+					buf, err = writeJson(val)
+				}
 				if err != nil {
-					fmt.Println(fmt.Errorf("unexpected marshaling error: %v\n", err))
+					fmt.Println(fmt.Errorf("write error: %v", err))
 					continue
 				}
 				ch := writers[i]
@@ -112,6 +122,17 @@ func (ent *Entity) Generate(sharedFields map[string]interface{}) (interface{}, b
 
 	atomic.AddInt64(&cfg.currentCount, 1)
 	return ent.Field.Generate(sharedFields), true
+}
+
+func (ent *Entity) CsvColumns() []string {
+	if ent.csvColumnsCache == nil {
+		cache := make([]string, len(ent.Field.Fields))
+		for i, field := range ent.Field.Fields {
+			cache[i] = field.Name
+		}
+		ent.csvColumnsCache = cache
+	}
+	return ent.csvColumnsCache
 }
 
 func (f *Field) Generate(sharedFields map[string]interface{}) interface{} {

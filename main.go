@@ -2,16 +2,17 @@ package main
 
 import (
 	"bufio"
+	"encoding/csv"
 	"flag"
 	"fmt"
+	"github.com/brianvoe/gofakeit/v4"
+	"github.com/go-playground/validator/v10"
+	io2 "github.com/integration-system/isp-io"
 	"io"
 	"io/ioutil"
 	"os"
 	"runtime/debug"
 	"time"
-
-	"github.com/brianvoe/gofakeit/v4"
-	"github.com/go-playground/validator/v10"
 )
 
 var (
@@ -82,8 +83,12 @@ func checkCommand(config *Config) {
 }
 
 func generateCommand(config *Config) {
-	writers := make([]io.Writer, len(config.Entities))
-
+	pipes := make([]io2.WritePipe, len(config.Entities))
+	defer func() {
+		for _, pipe := range pipes {
+			_ = pipe.Close()
+		}
+	}()
 	var filePerm int
 	if forceWrite {
 		filePerm = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
@@ -91,26 +96,28 @@ func generateCommand(config *Config) {
 		filePerm = os.O_WRONLY | os.O_CREATE | os.O_EXCL
 	}
 
+	writers := make([]io.Writer, len(config.Entities))
 	for i := range config.Entities {
-		conf := config.Entities[i].Config
+		entity := config.Entities[i]
+		conf := entity.Config
 		f, err := os.OpenFile(conf.Filepath, filePerm, 0755)
 		if err != nil {
 			fmt.Printf("opening %s file: %v\n", conf.Filepath, err)
 			return
 		}
+
+		if conf.OutputFormat == CsvFormat {
+			csvWriter := csv.NewWriter(f)
+			csvWriter.Comma = defaultCsvSep
+			if err := csvWriter.Write(entity.CsvColumns()); err != nil {
+				fmt.Printf("csv write: %v\n", err)
+				return
+			}
+			csvWriter.Flush()
+		}
+
 		bufWriter := bufio.NewWriterSize(f, bufSize)
-		defer func() {
-			err = bufWriter.Flush()
-			if err != nil {
-				fmt.Printf("flush buffer to %s file: %v\n", conf.Filepath, err)
-			}
-
-			err = f.Close()
-			if err != nil {
-				fmt.Printf("close %s file: %v\n", conf.Filepath, err)
-			}
-		}()
-
+		pipes[i] = io2.NewWritePipe(bufWriter, f)
 		writers[i] = bufWriter
 	}
 
