@@ -212,17 +212,9 @@ func (t *Type) GenerateByType() (interface{}, error) {
 		}
 		return gofakeit.Word(), nil
 	case IntType:
-		val := randRange(t.Min, t.Max)
-		if val != 0 {
-			return val, nil
-		}
-		return rand.Int63(), nil
+		return randRange(t.Min, t.Max), nil
 	case IntStringType:
-		val := randRange(t.Min, t.Max)
-		if val != 0 {
-			return strconv.Itoa(val), nil
-		}
-		return strconv.FormatInt(rand.Int63(), 10), nil
+		return strconv.Itoa(randRange(t.Min, t.Max)), nil
 	case DateType:
 		date := randDate()
 		if t.DateFormat != "" {
@@ -254,7 +246,6 @@ func randRange(min, max int) int {
 		return max
 	}
 	val := rand.Intn(max-min) + min
-
 	return val
 }
 
