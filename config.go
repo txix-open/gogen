@@ -5,8 +5,7 @@ import (
 )
 
 const (
-	JsonFormat = "json"
-	CsvFormat  = "csv"
+	CsvFormat = "csv"
 )
 
 type Config struct {
@@ -34,7 +33,6 @@ type EntityConfig struct {
 
 type Field struct {
 	Name      string  `json:",omitempty"`
-	Reference string  `json:",omitempty"`
 	NilChance int     `json:",omitempty" validate:"gte=0,lte=100"`
 	Type      *Type   `json:",omitempty"`
 	Fields    []Field `json:",omitempty" validate:"dive"`
@@ -42,7 +40,7 @@ type Field struct {
 }
 
 type Type struct {
-	Type string `validate:"required" json:",omitempty"`
+	Type string `json:",omitempty"`
 	// TODO:
 	//  - MaskedString by gofakeit.Generate() or gofakeit.Numerify()
 	//  - Date interval by DateRange()
@@ -50,7 +48,12 @@ type Type struct {
 	OneOf      []interface{} `json:",omitempty"`
 	DateFormat string        `json:",omitempty"`
 	Min        int           `json:",omitempty"`
-	Max        int           `json:",omitempty" validate:"omitempty,gtefield=Min"`
+	Max        int           `json:",omitempty" validate:"omitempty"`
+	AsString   bool          `json:",omitempty"`
+	Template   string        `json:",omitempty"`
+	Reference  string        `json:",omitempty"`
+
+	seq int64
 }
 
 type Array struct {
@@ -64,9 +67,7 @@ func FieldStructLevelValidation(sl validator.StructLevel) {
 	field := sl.Current().Interface().(Field)
 
 	setCount := 0
-	if field.Reference != "" {
-		setCount++
-	}
+
 	if field.Type != nil {
 		setCount++
 	}

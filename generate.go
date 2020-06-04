@@ -4,25 +4,24 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/brianvoe/gofakeit/v5"
 	"io"
 	"runtime"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/brianvoe/gofakeit/v4"
 )
 
 const (
-	StringType    = "string"
-	IntType       = "int"
-	IntStringType = "intstring"
-	DateType      = "date"
-	BoolType      = "bool"
-	UuidType      = "uuid"
-	ConstType     = "const"
-	OneOfType     = "oneof"
+	StringType   = "string"
+	IntType      = "int"
+	DateType     = "date"
+	BoolType     = "bool"
+	UuidType     = "uuid"
+	ConstType    = "const"
+	OneOfType    = "oneof"
+	SequenceType = "sequence"
+	EmailType    = "email"
 )
 
 const (
@@ -140,15 +139,6 @@ func (f *Field) Generate(sharedFields map[string]interface{}) interface{} {
 		return nil
 	}
 
-	if f.Reference != "" {
-		val, exists := sharedFields[f.Reference]
-		if !exists {
-			fmt.Printf("invalid field %s, reference %s not found\n", f.Name, f.Reference)
-			return nil
-		}
-		return val
-	}
-
 	if fields := f.Fields; fields != nil {
 		m := make(map[string]interface{}, len(fields))
 		for _, f := range fields {
@@ -157,6 +147,7 @@ func (f *Field) Generate(sharedFields map[string]interface{}) interface{} {
 		return m
 	}
 
+	//nolint:nestif
 	if arr := f.Array; arr != nil {
 		if arr.Fixed != nil {
 			result := make([]interface{}, 0, len(arr.Fixed))
@@ -187,7 +178,7 @@ func (f *Field) Generate(sharedFields map[string]interface{}) interface{} {
 	}
 
 	if f.Type != nil {
-		val, err := f.Type.GenerateByType()
+		val, err := f.Type.GenerateByType(sharedFields)
 		if err != nil {
 			fmt.Printf("invalid value: %v\n", err)
 		}
@@ -198,7 +189,30 @@ func (f *Field) Generate(sharedFields map[string]interface{}) interface{} {
 	return nil
 }
 
-func (t *Type) GenerateByType() (interface{}, error) {
+func (t *Type) GenerateByType(sharedFields map[string]interface{}) (val interface{}, err error) {
+	if t.Reference != "" {
+		v, exists := sharedFields[t.Reference]
+		if !exists {
+			return nil, fmt.Errorf("reference %s not found\n", t.Reference)
+		}
+		val = v
+	} else {
+		val, err = t.generateSelf()
+	}
+
+	if err != nil {
+		if t.AsString {
+			val = fmt.Sprintf("%v", val)
+		}
+		if t.Template != "" {
+			val = fmt.Sprintf(t.Template, val)
+		}
+	}
+
+	return val, err
+}
+
+func (t *Type) generateSelf() (val interface{}, err error) {
 	switch t.Type {
 	case StringType:
 		val := randRange(t.Min, t.Max)
@@ -212,33 +226,42 @@ func (t *Type) GenerateByType() (interface{}, error) {
 		}
 		return gofakeit.Word(), nil
 	case IntType:
-		return randRange(t.Min, t.Max), nil
-	case IntStringType:
-		return strconv.Itoa(randRange(t.Min, t.Max)), nil
+		val, err = randRange(t.Min, t.Max), nil
 	case DateType:
 		date := randDate()
 		if t.DateFormat != "" {
 			return date.Format(t.DateFormat), nil
 		}
-		return date, nil
+		val, err = date, nil
 	case BoolType:
-		return gofakeit.Bool(), nil
+		val, err = gofakeit.Bool(), nil
+	case EmailType:
+		return gofakeit.Email(), nil
 	case UuidType:
 		return gofakeit.UUID(), nil
 	case ConstType:
 		if t.Const == nil {
 			return nil, errors.New("nil const type")
 		}
-		return t.Const, nil
+		val, err = t.Const, nil
 	case OneOfType:
 		if len(t.OneOf) == 0 {
 			return nil, errors.New("zero oneOf values")
 		}
 		i := rand.Intn(len(t.OneOf))
-		return t.OneOf[i], nil
+		val, err = t.OneOf[i], nil
+	case SequenceType:
+		if atomic.CompareAndSwapInt64(&t.seq, 0, int64(t.Min)) {
+			val, err = t.Min, nil
+		} else if v := atomic.AddInt64(&t.seq, 1); t.Max > 0 && v > int64(t.Max) {
+			val, err = t.Max, nil
+		} else {
+			val, err = v, nil
+		}
 	default:
 		return nil, fmt.Errorf("unknown type %q", t.Type)
 	}
+	return val, err
 }
 
 func randRange(min, max int) int {

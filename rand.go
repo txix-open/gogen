@@ -11,7 +11,7 @@ var (
 )
 
 func init() {
-	src := random.NewSource(time.Now().UnixNano() / 2).(random.Source64)
+	src := random.NewSource(time.Now().UnixNano()).(random.Source64)
 	rand = random.New(&lockedSource{src: src})
 }
 

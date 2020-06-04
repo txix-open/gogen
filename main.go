@@ -5,7 +5,7 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"github.com/brianvoe/gofakeit/v4"
+	"github.com/brianvoe/gofakeit/v5"
 	"github.com/go-playground/validator/v10"
 	io2 "github.com/integration-system/isp-io"
 	"io"
@@ -86,7 +86,9 @@ func generateCommand(config *Config) {
 	pipes := make([]io2.WritePipe, len(config.Entities))
 	defer func() {
 		for _, pipe := range pipes {
-			_ = pipe.Close()
+			if pipe != nil {
+				_ = pipe.Close()
+			}
 		}
 	}()
 	var filePerm int

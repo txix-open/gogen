@@ -10,6 +10,8 @@ linters:
     - godox # находит тудушки, не нужно
     - golint # подумать, может вернуть
     - stylecheck # подумать, может вернуть
+    - gomnd
+    - goerr113
 
 linters-settings:
   maligned:

@@ -1,5 +1,5 @@
-github.com/brianvoe/gofakeit/v4 v4.2.2 h1:RhzfOvfD6/KNI/5sudTDlYY6MU/PKJqhELwy0JeLiXE=
-github.com/brianvoe/gofakeit/v4 v4.2.2/go.mod h1:GC/GhKWdGJ2eskBf4zGdjo3eHj8rX4E9hFLFg0bqK4s=
+github.com/brianvoe/gofakeit/v5 v5.6.3 h1:2PZex8wTlSPWlUFYpQHztfyTcdhdKfNVPvAvGIOtyy8=
+github.com/brianvoe/gofakeit/v5 v5.6.3/go.mod h1:/ZENnKqX+XrN8SORLe/fu5lZDIo1tuPncWuRD+eyhSI=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
