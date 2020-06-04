@@ -199,14 +199,15 @@ func (t *Type) GenerateByType(sharedFields map[string]interface{}) (val interfac
 	} else {
 		val, err = t.generateSelf()
 	}
-
 	if err != nil {
-		if t.AsString {
-			val = fmt.Sprintf("%v", val)
-		}
-		if t.Template != "" {
-			val = fmt.Sprintf(t.Template, val)
-		}
+		return nil, err
+	}
+
+	if t.AsString {
+		val = fmt.Sprintf("%v", val)
+	}
+	if t.Template != "" {
+		val = fmt.Sprintf(t.Template, val)
 	}
 
 	return val, err
