@@ -1,0 +1,62 @@
+{
+  "TotalCount": 100,
+  "SharedFields": [
+    {
+      "Name": "sso_id",
+      "Type": {
+        "Type": "uuid"
+      }
+    }
+  ],
+  "Entities": [
+    {
+      "Field": {
+        "Fields": [
+          {
+            "Name": "USER",
+            "Fields": [{
+              "Name": "LoginName",
+              "Type": {
+                "Reference": "sso_id"
+              }
+            }]
+          },
+          {
+            "Name": "PETS",
+            "Array": {
+              "MinLen": 1,
+              "MaxLen": 3,
+              "Value": {
+                "Fields": [
+                  {
+                    "Name": "PetName",
+                    "Type": {
+                      "Type": "string"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Config": {
+        "OutputFormat": "json",
+        "Filepath": "nt/users.json"
+      }
+    }, {
+      "Field": {
+        "Fields": [{
+          "Name": "sso_id",
+          "Type": {
+            "Reference": "sso_id"
+          }
+        }]
+      },
+      "Config": {
+        "OutputFormat": "csv",
+        "Filepath": "nt/ammos.json"
+      }
+    }
+  ]
+}

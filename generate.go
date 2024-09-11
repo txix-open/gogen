@@ -28,10 +28,10 @@ const (
 	chanBuffer = 100
 )
 
-var emptySharedFields = make(map[string]interface{})
+var emptySharedFields = make(map[string]any)
 
-func (cfg *Config) GenerateSharedFields() map[string]interface{} {
-	sharedFields := make(map[string]interface{}, len(cfg.SharedFields))
+func (cfg *Config) GenerateSharedFields() map[string]any {
+	sharedFields := make(map[string]any, len(cfg.SharedFields))
 	for _, field := range cfg.SharedFields {
 		if field.Name == "" {
 			fmt.Printf("invalid shared field %v: empty name", field)
@@ -46,7 +46,7 @@ func (cfg *Config) GenerateSharedFields() map[string]interface{} {
 func (cfg *Config) GenerateEntities(writers []io.Writer) {
 	workersCount := runtime.NumCPU() * 2
 
-	sharedFieldsCh := make(chan map[string]interface{}, chanBuffer)
+	sharedFieldsCh := make(chan map[string]any, chanBuffer)
 	writersWg := new(sync.WaitGroup)
 	readersWg := new(sync.WaitGroup)
 
@@ -77,7 +77,7 @@ func (cfg *Config) GenerateEntities(writers []io.Writer) {
 	readersWg.Wait()
 }
 
-func newWorker(fieldsCh <-chan map[string]interface{}, wg *sync.WaitGroup, cfg *Config, writers []chan *bytes.Buffer) {
+func newWorker(fieldsCh <-chan map[string]any, wg *sync.WaitGroup, cfg *Config, writers []chan *bytes.Buffer) {
 	defer wg.Done()
 
 	for fields := range fieldsCh {
@@ -106,7 +106,7 @@ func newWorker(fieldsCh <-chan map[string]interface{}, wg *sync.WaitGroup, cfg *
 	}
 }
 
-func (ent *Entity) Generate(sharedFields map[string]interface{}) (interface{}, bool) {
+func (ent *Entity) Generate(sharedFields map[string]any) (any, bool) {
 	cfg := &ent.Config
 	if cfg.Count == 0 && cfg.Rate == 0 {
 		cfg.Rate = 100
@@ -134,13 +134,13 @@ func (ent *Entity) CsvColumns() []string {
 	return ent.csvColumnsCache
 }
 
-func (f *Field) Generate(sharedFields map[string]interface{}) interface{} {
+func (f *Field) Generate(sharedFields map[string]any) any {
 	if f.NilChance > 0 && randPercent() <= f.NilChance {
 		return nil
 	}
 
 	if fields := f.Fields; fields != nil {
-		m := make(map[string]interface{}, len(fields))
+		m := make(map[string]any, len(fields))
 		for _, f := range fields {
 			m[f.Name] = f.Generate(sharedFields)
 		}
@@ -150,7 +150,7 @@ func (f *Field) Generate(sharedFields map[string]interface{}) interface{} {
 	//nolint:nestif
 	if arr := f.Array; arr != nil {
 		if arr.Fixed != nil {
-			result := make([]interface{}, 0, len(arr.Fixed))
+			result := make([]any, 0, len(arr.Fixed))
 			for i := range arr.Fixed {
 				field := arr.Fixed[i]
 				val := field.Generate(sharedFields)
@@ -166,7 +166,7 @@ func (f *Field) Generate(sharedFields map[string]interface{}) interface{} {
 		if size == 0 && arr.MaxLen == 0 {
 			fmt.Printf("zero max array length, probably mistake")
 		}
-		result := make([]interface{}, 0, size)
+		result := make([]any, 0, size)
 		for i := 0; i < size; i++ {
 			val := arr.Value.Generate(sharedFields)
 			if val == nil {
@@ -189,7 +189,7 @@ func (f *Field) Generate(sharedFields map[string]interface{}) interface{} {
 	return nil
 }
 
-func (t *Type) GenerateByType(sharedFields map[string]interface{}) (val interface{}, err error) {
+func (t *Type) GenerateByType(sharedFields map[string]any) (val any, err error) {
 	if t.Reference != "" {
 		v, exists := sharedFields[t.Reference]
 		if !exists {
@@ -213,7 +213,7 @@ func (t *Type) GenerateByType(sharedFields map[string]interface{}) (val interfac
 	return val, err
 }
 
-func (t *Type) generateSelf() (val interface{}, err error) {
+func (t *Type) generateSelf() (val any, err error) {
 	switch t.Type {
 	case StringType:
 		val := randRange(t.Min, t.Max)

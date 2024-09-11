@@ -11,7 +11,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"runtime/debug"
 	"time"
 )
 
@@ -26,8 +25,6 @@ const (
 )
 
 func main() {
-	debug.SetGCPercent(1000)
-
 	gofakeit.Seed(time.Now().UnixNano())
 
 	flag.StringVar(&configPath, "config", "config.json", "config path")

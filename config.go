@@ -15,7 +15,6 @@ type Config struct {
 }
 
 type Entity struct {
-	Name            string // TODO: remove? not used
 	Field           Field
 	Config          EntityConfig
 	csvColumnsCache []string
