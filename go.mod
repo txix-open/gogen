@@ -1,4 +1,4 @@
-module github.com/integration-system/gogen
+module github.com/txix-open/gogen
 
 go 1.23
 
