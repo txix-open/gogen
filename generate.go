@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	json2 "encoding/json"
 	"errors"
 	"fmt"
 	"github.com/brianvoe/gofakeit/v5"
@@ -208,6 +209,9 @@ func (t *Type) GenerateByType(sharedFields map[string]any) (val any, err error) 
 	}
 	if t.Template != "" {
 		val = fmt.Sprintf(t.Template, val)
+	}
+	if t.AsJson {
+		val = json2.RawMessage(val.(string))
 	}
 
 	return val, err

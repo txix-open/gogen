@@ -49,6 +49,7 @@ type Type struct {
 	Min        int           `json:",omitempty"`
 	Max        int           `json:",omitempty" validate:"omitempty"`
 	AsString   bool          `json:",omitempty"`
+	AsJson     bool          `json:",omitempty"`
 	Template   string        `json:",omitempty"`
 	Reference  string        `json:",omitempty"`
 
