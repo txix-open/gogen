@@ -329,7 +329,6 @@ func makeCsvColumnsFromFields(fields []Field) []string {
 	for i, field := range fields {
 		columns[i] = field.Name
 	}
-	slices.Sort(columns)
 	return columns
 }
 
