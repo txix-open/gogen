@@ -5,12 +5,14 @@ import (
 	json2 "encoding/json"
 	"errors"
 	"fmt"
-	"github.com/brianvoe/gofakeit/v5"
 	"io"
 	"runtime"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/brianvoe/gofakeit/v5"
 )
 
 const (
@@ -125,12 +127,13 @@ func (ent *Entity) Generate(sharedFields map[string]any) (any, bool) {
 }
 
 func (ent *Entity) CsvColumns() []string {
-	if ent.csvColumnsCache == nil {
-		cache := make([]string, len(ent.Field.Fields))
-		for i, field := range ent.Field.Fields {
-			cache[i] = field.Name
-		}
-		ent.csvColumnsCache = cache
+	switch {
+	case ent.csvColumnsCache != nil:
+		return ent.csvColumnsCache
+	case len(ent.Field.Fields) > 0:
+		ent.csvColumnsCache = makeCsvColumnsFromFields(ent.Field.Fields)
+	case len(ent.Field.OneOfFields) > 0:
+		ent.csvColumnsCache = makeCsvColumnsFromOneOfFields(ent.Field.OneOfFields)
 	}
 	return ent.csvColumnsCache
 }
@@ -176,6 +179,11 @@ func (f *Field) Generate(sharedFields map[string]any) any {
 			result = append(result, val)
 		}
 		return result
+	}
+
+	if len(f.OneOfFields) > 0 {
+		i := rand.Intn(len(f.OneOfFields))
+		return f.OneOfFields[i].Generate(sharedFields)
 	}
 
 	if f.Type != nil {
@@ -287,4 +295,28 @@ func randDate() time.Time {
 
 	date := time.Unix(now-int64(randOffset), 0)
 	return date
+}
+
+func makeCsvColumnsFromFields(fields []Field) []string {
+	columns := make([]string, len(fields))
+	for i, field := range fields {
+		columns[i] = field.Name
+	}
+	slices.Sort(columns)
+	return columns
+}
+
+func makeCsvColumnsFromOneOfFields(oneOfFields []Field) []string {
+	dict := make(map[string]bool)
+	for _, field := range oneOfFields {
+		for _, v := range field.Fields {
+			dict[v.Name] = true
+		}
+	}
+	columns := make([]string, 0, len(oneOfFields))
+	for field := range dict {
+		columns = append(columns, field)
+	}
+	slices.Sort(columns)
+	return columns
 }

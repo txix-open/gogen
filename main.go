@@ -5,13 +5,14 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"github.com/brianvoe/gofakeit/v5"
-	"github.com/go-playground/validator/v10"
-	io2 "github.com/integration-system/isp-io"
 	"io"
 	"io/ioutil"
 	"os"
 	"time"
+
+	"github.com/brianvoe/gofakeit/v5"
+	"github.com/go-playground/validator/v10"
+	io2 "github.com/integration-system/isp-io"
 )
 
 var (

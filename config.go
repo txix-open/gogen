@@ -31,11 +31,12 @@ type EntityConfig struct {
 }
 
 type Field struct {
-	Name      string  `json:",omitempty"`
-	NilChance int     `json:",omitempty" validate:"gte=0,lte=100"`
-	Type      *Type   `json:",omitempty"`
-	Fields    []Field `json:",omitempty" validate:"dive"`
-	Array     *Array  `json:",omitempty"`
+	Name        string  `json:",omitempty"`
+	NilChance   int     `json:",omitempty" validate:"gte=0,lte=100"`
+	Type        *Type   `json:",omitempty"`
+	Fields      []Field `json:",omitempty" validate:"dive"`
+	Array       *Array  `json:",omitempty"`
+	OneOfFields []Field `json:",omitempty" validate:"dive"`
 }
 
 type Type struct {
@@ -75,6 +76,9 @@ func FieldStructLevelValidation(sl validator.StructLevel) {
 		setCount++
 	}
 	if field.Array != nil {
+		setCount++
+	}
+	if field.OneOfFields != nil {
 		setCount++
 	}
 
