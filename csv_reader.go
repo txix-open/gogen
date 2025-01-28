@@ -51,6 +51,6 @@ func NewCsvReader(cfg *csvDataSource) (*csvReader, error) {
 }
 
 func (r csvReader) ReadRandom() string {
-	idx := random.Intn(len(r.values))
+	idx := random.Intn(len(r.values)) // nolint:gosec
 	return r.values[idx]
 }

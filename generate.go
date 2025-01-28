@@ -1,3 +1,4 @@
+// nolint:forbidigo
 package main
 
 import (
@@ -75,11 +76,11 @@ func (cfg *Config) GenerateEntities(writers []io.Writer) error {
 	}
 
 	writersWg.Add(workersCount)
-	for i := 0; i < workersCount; i++ {
+	for range workersCount {
 		go newWorker(sharedFieldsCh, writersWg, cfg.Entities, readersChs, extCsvReader)
 	}
 
-	for count := 0; count < cfg.TotalCount; count++ {
+	for range cfg.TotalCount {
 		sharedFields := cfg.GenerateSharedFields(extCsvReader)
 		sharedFieldsCh <- sharedFields
 	}
@@ -114,7 +115,7 @@ func newWorker(fieldsCh <-chan map[string]any, wg *sync.WaitGroup, entities []En
 					buf, err = writeJson(val)
 				}
 				if err != nil {
-					fmt.Println(fmt.Errorf("write error: %v", err))
+					fmt.Println(errors.WithMessage(err, "write error"))
 					continue
 				}
 				ch := writers[i]
@@ -153,6 +154,7 @@ func (ent *Entity) CsvColumns() []string {
 	return ent.csvColumnsCache
 }
 
+// nolint:cyclop
 func (f *Field) Generate(sharedFields map[string]any, extSrcReader *csvReader) any {
 	if f.NilChance > 0 && randPercent() <= f.NilChance {
 		return nil
@@ -186,7 +188,7 @@ func (f *Field) Generate(sharedFields map[string]any, extSrcReader *csvReader) a
 			fmt.Printf("zero max array length, probably mistake")
 		}
 		result := make([]any, 0, size)
-		for i := 0; i < size; i++ {
+		for range size {
 			val := arr.Value.Generate(sharedFields, extSrcReader)
 			if val == nil {
 				continue
@@ -213,6 +215,7 @@ func (f *Field) Generate(sharedFields map[string]any, extSrcReader *csvReader) a
 	return nil
 }
 
+// nolint:nonamedreturns
 func (t *Type) GenerateByType(sharedFields map[string]any, extSrcReader *csvReader) (val any, err error) {
 	switch {
 	case t.Reference != "":
@@ -240,12 +243,14 @@ func (t *Type) GenerateByType(sharedFields map[string]any, extSrcReader *csvRead
 		val = fmt.Sprintf(t.Template, val)
 	}
 	if t.AsJson {
-		val = json2.RawMessage(val.(string))
+		v, _ := val.(string)
+		val = json2.RawMessage(v)
 	}
 
 	return val, err
 }
 
+// nolint:cyclop,nonamedreturns
 func (t *Type) generateSelf() (val any, err error) {
 	switch t.Type {
 	case StringType:
@@ -293,11 +298,12 @@ func (t *Type) generateSelf() (val any, err error) {
 			val, err = v, nil
 		}
 	default:
-		return nil, fmt.Errorf("unknown type %q", t.Type)
+		return nil, errors.Errorf("unknown type %q", t.Type)
 	}
 	return val, err
 }
 
+// nolint:predeclared
 func randRange(min, max int) int {
 	if max == min {
 		return max

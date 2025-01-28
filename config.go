@@ -1,3 +1,4 @@
+// nolint:tagliatelle
 package main
 
 import (
@@ -72,7 +73,7 @@ type Array struct {
 }
 
 func FieldStructLevelValidation(sl validator.StructLevel) {
-	field := sl.Current().Interface().(Field)
+	field, _ := sl.Current().Interface().(Field)
 
 	setCount := 0
 
@@ -98,7 +99,7 @@ func FieldStructLevelValidation(sl validator.StructLevel) {
 }
 
 func ArrayStructLevelValidation(sl validator.StructLevel) {
-	arr := sl.Current().Interface().(Array)
+	arr, _ := sl.Current().Interface().(Array)
 
 	if arr.Value == nil && arr.Fixed == nil {
 		sl.ReportError(arr.Value, "Value", "", "missing_one_of_optionals", "Value or Fixed must be set")
@@ -106,7 +107,7 @@ func ArrayStructLevelValidation(sl validator.StructLevel) {
 }
 
 func TypeStructLevelValidation(sl validator.StructLevel) {
-	t := sl.Current().Interface().(Type)
+	t, _ := sl.Current().Interface().(Type)
 
 	if t.Type == OneOfType && len(t.OneOf) == 0 {
 		sl.ReportError(t.OneOf, "OneOf", "", "missing_param", "'OneOf' param not set")

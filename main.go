@@ -1,3 +1,4 @@
+// nolint:forbidigo
 package main
 
 import (
@@ -6,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -53,13 +53,18 @@ func main() {
 		return
 	}
 
+	var errList validator.ValidationErrors
 	err = validate.Struct(config)
-	if err != nil {
+	switch {
+	case errors.As(err, &errList):
 		fmt.Println("Config validation errors:")
 		const fieldErrMsg string = "Key: '%s' Error:Field validation for '%s' failed on the '%s' tag: %s\n"
-		for _, err := range err.(validator.ValidationErrors) {
+		for _, err := range errList {
 			fmt.Printf(fieldErrMsg, err.Namespace(), err.Field(), err.Tag(), err.Param())
 		}
+		return
+	case err != nil:
+		fmt.Println(errors.WithMessage(err, "unexpected error"))
 		return
 	}
 
@@ -80,7 +85,7 @@ func main() {
 func checkCommand(config *Config) error {
 	writers := make([]io.Writer, 0, len(config.Entities))
 	for range config.Entities {
-		writers = append(writers, ioutil.Discard)
+		writers = append(writers, io.Discard)
 	}
 
 	config.TotalCount = 5

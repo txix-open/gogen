@@ -3,12 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/csv"
-	"errors"
 	"fmt"
 	"io"
 	"sync"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -26,20 +26,26 @@ var (
 )
 
 func writeJson(val interface{}) (*bytes.Buffer, error) {
-	buf := bpool.Get().(*bytes.Buffer)
+	buf, ok := bpool.Get().(*bytes.Buffer)
+	if !ok {
+		return nil, errors.Errorf("failed type assertion to *bytes.Buffer")
+	}
 
 	err := json.NewEncoder(buf).Encode(val)
 	if err != nil {
 		buf.Reset()
 		bpool.Put(buf)
-		return nil, err
+		return nil, errors.WithMessage(err, "encode json value")
 	}
 
 	return buf, nil
 }
 
 func writeCsv(val interface{}, columnsOrder []string) (*bytes.Buffer, error) {
-	buf := bpool.Get().(*bytes.Buffer)
+	buf, ok := bpool.Get().(*bytes.Buffer)
+	if !ok {
+		return nil, errors.Errorf("failed type assertion to *bytes.Buffer")
+	}
 
 	switch m := val.(type) {
 	case map[string]interface{}:
@@ -56,7 +62,7 @@ func writeCsv(val interface{}, columnsOrder []string) (*bytes.Buffer, error) {
 		if err := csvWriter.Write(columns); err != nil {
 			buf.Reset()
 			bpool.Put(buf)
-			return nil, err
+			return nil, errors.WithMessage(err, "write csv columns")
 		}
 		csvWriter.Flush()
 	default:
@@ -72,7 +78,7 @@ func newWriterWorker(bytesCh <-chan *bytes.Buffer, wg *sync.WaitGroup, writer io
 	for buf := range bytesCh {
 		_, err := buf.WriteTo(writer)
 		if err != nil {
-			fmt.Println(fmt.Errorf("unexpected write error: %v\n", err))
+			fmt.Println(errors.WithMessage(err, "unexpected write error")) // nolint:forbidigo
 		}
 		bpool.Put(buf)
 	}
