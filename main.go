@@ -13,6 +13,7 @@ import (
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/go-playground/validator/v10"
 	io2 "github.com/integration-system/isp-io"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -40,7 +41,7 @@ func main() {
 	validate.RegisterStructValidation(TypeStructLevelValidation, Type{})
 	validate.RegisterStructValidation(ArrayStructLevelValidation, Array{})
 
-	configBytes, err := ioutil.ReadFile(configPath)
+	configBytes, err := os.ReadFile(configPath)
 	if err != nil {
 		fmt.Printf("error opening config file: %v\n", err)
 		return
@@ -63,24 +64,35 @@ func main() {
 	}
 
 	if check {
-		checkCommand(config)
+		err := checkCommand(config)
+		if err != nil {
+			fmt.Printf("check command: %v\n", err)
+		}
 		return
 	}
 
-	generateCommand(config)
+	err = generateCommand(config)
+	if err != nil {
+		fmt.Printf("generate command: %v\n", err)
+	}
 }
 
-func checkCommand(config *Config) {
+func checkCommand(config *Config) error {
 	writers := make([]io.Writer, 0, len(config.Entities))
 	for range config.Entities {
 		writers = append(writers, ioutil.Discard)
 	}
 
 	config.TotalCount = 5
-	config.GenerateEntities(writers)
+	err := config.GenerateEntities(writers)
+	if err != nil {
+		return errors.WithMessage(err, "generate entities")
+	}
+
+	return nil
 }
 
-func generateCommand(config *Config) {
+func generateCommand(config *Config) error {
 	pipes := make([]io2.WritePipe, len(config.Entities))
 	defer func() {
 		for _, pipe := range pipes {
@@ -103,7 +115,7 @@ func generateCommand(config *Config) {
 		f, err := os.OpenFile(conf.Filepath, filePerm, 0755)
 		if err != nil {
 			fmt.Printf("opening %s file: %v\n", conf.Filepath, err)
-			return
+			return nil
 		}
 
 		if conf.OutputFormat == CsvFormat {
@@ -111,7 +123,7 @@ func generateCommand(config *Config) {
 			csvWriter.Comma = defaultCsvSep
 			if err := csvWriter.Write(entity.CsvColumns()); err != nil {
 				fmt.Printf("csv write: %v\n", err)
-				return
+				return nil
 			}
 			csvWriter.Flush()
 		}
@@ -122,6 +134,11 @@ func generateCommand(config *Config) {
 	}
 
 	now := time.Now()
-	config.GenerateEntities(writers)
+	err := config.GenerateEntities(writers)
+	if err != nil {
+		return errors.WithMessage(err, "generate entities")
+	}
 	fmt.Printf("Elapsed time: %v\n", time.Since(now))
+
+	return nil
 }

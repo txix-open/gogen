@@ -9,9 +9,15 @@ const (
 )
 
 type Config struct {
-	TotalCount   int      `validate:"gt=0"`
-	SharedFields []Field  `validate:"dive"`
-	Entities     []Entity `validate:"required,gt=0,dive"`
+	TotalCount        int      `validate:"gt=0"`
+	SharedFields      []Field  `validate:"dive"`
+	Entities          []Entity `validate:"required,gt=0,dive"`
+	ExternalCsvSource *csvDataSource
+}
+
+type csvDataSource struct {
+	Filepath    string `validate:"required"`
+	TargetField string `validate:"required"`
 }
 
 type Entity struct {
@@ -44,15 +50,16 @@ type Type struct {
 	// TODO:
 	//  - MaskedString by gofakeit.Generate() or gofakeit.Numerify()
 	//  - Date interval by DateRange()
-	Const      interface{}   `json:",omitempty"`
-	OneOf      []interface{} `json:",omitempty"`
-	DateFormat string        `json:",omitempty"`
-	Min        int           `json:",omitempty"`
-	Max        int           `json:",omitempty" validate:"omitempty"`
-	AsString   bool          `json:",omitempty"`
-	AsJson     bool          `json:",omitempty"`
-	Template   string        `json:",omitempty"`
-	Reference  string        `json:",omitempty"`
+	Const              interface{}   `json:",omitempty"`
+	OneOf              []interface{} `json:",omitempty"`
+	DateFormat         string        `json:",omitempty"`
+	Min                int           `json:",omitempty"`
+	Max                int           `json:",omitempty" validate:"omitempty"`
+	AsString           bool          `json:",omitempty"`
+	AsJson             bool          `json:",omitempty"`
+	FromExternalSource bool          `json:",omitempty"`
+	Template           string        `json:",omitempty"`
+	Reference          string        `json:",omitempty"`
 
 	seq int64
 }
