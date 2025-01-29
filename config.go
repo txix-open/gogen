@@ -34,6 +34,7 @@ type EntityConfig struct {
 	Rate         int    `validate:"gte=0,lte=100"`
 	Filepath     string `validate:"required"`
 	OutputFormat string
+	CsvSeparator string
 	currentCount int64
 }
 
