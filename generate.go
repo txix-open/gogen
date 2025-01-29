@@ -110,7 +110,7 @@ func newWorker(fieldsCh <-chan map[string]any, wg *sync.WaitGroup, entities []En
 				)
 				switch entity.Config.OutputFormat {
 				case CsvFormat:
-					buf, err = writeCsv(val, entity.CsvColumns())
+					buf, err = writeCsv(val, entity)
 				default:
 					buf, err = writeJson(val)
 				}

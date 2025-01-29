@@ -125,8 +125,12 @@ func generateCommand(config *Config) error {
 
 		if conf.OutputFormat == CsvFormat {
 			csvWriter := csv.NewWriter(f)
-			csvWriter.Comma = defaultCsvSep
-			if err := csvWriter.Write(entity.CsvColumns()); err != nil {
+			if conf.CsvSeparator != "" {
+				csvWriter.Comma = []rune(conf.CsvSeparator)[0]
+			}
+
+			err := csvWriter.Write(entity.CsvColumns())
+			if err != nil {
 				fmt.Printf("csv write: %v\n", err)
 				return nil
 			}

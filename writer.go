@@ -11,10 +11,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	defaultCsvSep = ';'
-)
-
 var (
 	bpool = sync.Pool{
 		New: func() interface{} {
@@ -41,7 +37,7 @@ func writeJson(val interface{}) (*bytes.Buffer, error) {
 	return buf, nil
 }
 
-func writeCsv(val interface{}, columnsOrder []string) (*bytes.Buffer, error) {
+func writeCsv(val interface{}, entity Entity) (*bytes.Buffer, error) {
 	buf, ok := bpool.Get().(*bytes.Buffer)
 	if !ok {
 		return nil, errors.Errorf("failed type assertion to *bytes.Buffer")
@@ -50,16 +46,21 @@ func writeCsv(val interface{}, columnsOrder []string) (*bytes.Buffer, error) {
 	switch m := val.(type) {
 	case map[string]interface{}:
 		csvWriter := csv.NewWriter(buf)
-		csvWriter.Comma = defaultCsvSep
+		if entity.Config.CsvSeparator != "" {
+			csvWriter.Comma = []rune(entity.Config.CsvSeparator)[0]
+		}
+
 		columns := make([]string, 0, len(m))
-		for _, column := range columnsOrder {
+		for _, column := range entity.CsvColumns() {
 			if v, ok := m[column]; ok {
 				columns = append(columns, fmt.Sprintf("%v", v))
 			} else {
 				columns = append(columns, "")
 			}
 		}
-		if err := csvWriter.Write(columns); err != nil {
+
+		err := csvWriter.Write(columns)
+		if err != nil {
 			buf.Reset()
 			bpool.Put(buf)
 			return nil, errors.WithMessage(err, "write csv columns")
