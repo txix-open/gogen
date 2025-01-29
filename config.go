@@ -1,19 +1,30 @@
+// nolint:tagliatelle
 package main
 
 import (
 	"github.com/go-playground/validator/v10"
 )
 
+const (
+	CsvFormat = "csv"
+)
+
 type Config struct {
-	TotalCount   int      `validate:"gt=0"`
-	SharedFields []Field  `validate:"dive"`
-	Entities     []Entity `validate:"required,gt=0,dive"`
+	TotalCount        int      `validate:"gt=0"`
+	SharedFields      []Field  `validate:"dive"`
+	Entities          []Entity `validate:"required,gt=0,dive"`
+	ExternalCsvSource *csvDataSource
+}
+
+type csvDataSource struct {
+	Filepath    string `validate:"required"`
+	TargetField string `validate:"required"`
 }
 
 type Entity struct {
-	Name   string // TODO: remove? not used
-	Field  Field
-	Config EntityConfig
+	Field           Field
+	Config          EntityConfig
+	csvColumnsCache []string
 }
 
 type EntityConfig struct {
@@ -22,28 +33,36 @@ type EntityConfig struct {
 	// 1..100; if == 0, default is 100
 	Rate         int    `validate:"gte=0,lte=100"`
 	Filepath     string `validate:"required"`
+	OutputFormat string
 	currentCount int64
 }
 
 type Field struct {
-	Name      string  `json:",omitempty"`
-	Reference string  `json:",omitempty"`
-	NilChance int     `json:",omitempty" validate:"gte=0,lte=100"`
-	Type      *Type   `json:",omitempty"`
-	Fields    []Field `json:",omitempty" validate:"dive"`
-	Array     *Array  `json:",omitempty"`
+	Name        string  `json:",omitempty"`
+	NilChance   int     `json:",omitempty" validate:"gte=0,lte=100"`
+	Type        *Type   `json:",omitempty"`
+	Fields      []Field `json:",omitempty" validate:"dive"`
+	Array       *Array  `json:",omitempty"`
+	OneOfFields []Field `json:",omitempty" validate:"dive"`
 }
 
 type Type struct {
-	Type string `validate:"required" json:",omitempty"`
+	Type string `json:",omitempty"`
 	// TODO:
 	//  - MaskedString by gofakeit.Generate() or gofakeit.Numerify()
 	//  - Date interval by DateRange()
-	Const      interface{}   `json:",omitempty"`
-	OneOf      []interface{} `json:",omitempty"`
-	DateFormat string        `json:",omitempty"`
-	Min        int           `json:",omitempty"`
-	Max        int           `json:",omitempty" validate:"omitempty,gtefield=Min"`
+	Const              interface{}   `json:",omitempty"`
+	OneOf              []interface{} `json:",omitempty"`
+	DateFormat         string        `json:",omitempty"`
+	Min                int           `json:",omitempty"`
+	Max                int           `json:",omitempty" validate:"omitempty"`
+	AsString           bool          `json:",omitempty"`
+	AsJson             bool          `json:",omitempty"`
+	FromExternalSource bool          `json:",omitempty"`
+	Template           string        `json:",omitempty"`
+	Reference          string        `json:",omitempty"`
+
+	seq int64
 }
 
 type Array struct {
@@ -54,12 +73,10 @@ type Array struct {
 }
 
 func FieldStructLevelValidation(sl validator.StructLevel) {
-	field := sl.Current().Interface().(Field)
+	field, _ := sl.Current().Interface().(Field)
 
 	setCount := 0
-	if field.Reference != "" {
-		setCount++
-	}
+
 	if field.Type != nil {
 		setCount++
 	}
@@ -67,6 +84,9 @@ func FieldStructLevelValidation(sl validator.StructLevel) {
 		setCount++
 	}
 	if field.Array != nil {
+		setCount++
+	}
+	if field.OneOfFields != nil {
 		setCount++
 	}
 
@@ -79,7 +99,7 @@ func FieldStructLevelValidation(sl validator.StructLevel) {
 }
 
 func ArrayStructLevelValidation(sl validator.StructLevel) {
-	arr := sl.Current().Interface().(Array)
+	arr, _ := sl.Current().Interface().(Array)
 
 	if arr.Value == nil && arr.Fixed == nil {
 		sl.ReportError(arr.Value, "Value", "", "missing_one_of_optionals", "Value or Fixed must be set")
@@ -87,7 +107,7 @@ func ArrayStructLevelValidation(sl validator.StructLevel) {
 }
 
 func TypeStructLevelValidation(sl validator.StructLevel) {
-	t := sl.Current().Interface().(Type)
+	t, _ := sl.Current().Interface().(Type)
 
 	if t.Type == OneOfType && len(t.OneOf) == 0 {
 		sl.ReportError(t.OneOf, "OneOf", "", "missing_param", "'OneOf' param not set")

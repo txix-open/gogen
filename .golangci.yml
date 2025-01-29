@@ -1,37 +1,55 @@
+run:
+  allow-parallel-runners: true
+issues:
+  exclude-rules:
+    - path: controller #достаточное кол-во контекса на уровне контроллеров
+      linters:
+        - wrapcheck
+    - path: transaction #транзакции прозрачны
+      linters:
+        - wrapcheck
 linters:
   enable-all: true
   disable:
-    - goimports
-    - depguard # не используется
-    - gochecknoinits
-    - gochecknoglobals
-    - wsl
-    - gocognit
-    - godox # находит тудушки, не нужно
-    - golint # подумать, может вернуть
-    - stylecheck # подумать, может вернуть
-
+    - goimports #у нас собственные правила форматирования импортов
+    - wsl #расставление пробелов очень индивидуально
+    - varnamelen #очень индивидуально (db)
+    - exhaustruct #не имеет смысла
+    - contextcheck #не имеет смысла
+    - gci #у нас собственные правила форматирования импортов
+    - gofumpt #у нас собственные правила форматирования импортов
+    - nolintlint #Goland все равно форматирует с отступом
+    - nlreturn #не всегда имеет смысл
+    - godot #не актуально для свагера
+    - godox #не позволяет оставлять todo
+    - depguard #не всегда имеет смысл
+    - dupword #не имеет смысла
+    - tagalign #не всегда имеет смысл
+    - musttag #у нас собственные правило: не используем теги, если работаем с пакетом isp-kit/json и с внутренними структурами(между нашими сервисами), при этом теги обязательный для всех внених для нас структур
+    - perfsprint #мнимая производительность в угоду читаемости
+    - gomnd #устарел
+    - exportloopref #устарел
+    - execinquery #устарел
+    - mnd # в утилите уже давно используется много magic numbers ;c
+    - gochecknoglobals # почти в каждом исходном файле есть как минимум одна глобальная переменная
 linters-settings:
-  maligned:
-    suggest-new: true
-  lll:
-    line-length: 140
-    tab-width: 1
   funlen:
     lines: 80
-    statements: 40
-  prealloc:
-    # Report preallocation suggestions only on simple loops that have no returns/breaks/continues/gotos in them.
-    # True by default.
-    simple: true
-    range-loops: true # Report preallocation suggestions on range loops, true by default
-    for-loops: true # Report preallocation suggestions on for loops, false by default
-  gocritic:
-    # Enable multiple checks by tags, run `GL_DEBUG=gocritic golangci-lint run` to see all tags and checks.
-    # Empty list by default. See https://github.com/go-critic/go-critic#usage -> section "Tags".
-    enabled-tags:
-      - diagnostic
-      - performance
-    settings:
-      hugeParam:
-        sizeThreshold: 90
+  lll:
+    line-length: 150
+  cyclop:
+    max-complexity: 15 #по умолчанию 10 мало
+  revive:
+    rules:
+      - name: var-naming #отключаем Id -> ID
+        disabled: true
+  stylecheck:
+    checks: #отключаем Id -> ID
+      - "-ST1000"
+      - "-ST1016"
+      - "-ST1020"
+      - "-ST1021"
+      - "-ST1022"
+  testifylint:
+    disable:
+      - compares

@@ -1,0 +1,82 @@
+{
+  "TotalCount": 100,
+  "SharedFields": [
+    {
+      "Name": "sso_id",
+      "Type": {
+        "Type": "uuid"
+      }
+    }
+  ],
+  "Entities": [
+    {
+      "Field": {
+        "Fields": [
+          {
+            "Name": "USER",
+            "Fields": [{
+              "Name": "LoginName",
+              "Type": {
+                "Reference": "sso_id"
+              }
+            }]
+          },
+          {
+            "Name": "PETS",
+            "Array": {
+              "MinLen": 1,
+              "MaxLen": 3,
+              "Value": {
+                "Fields": [
+                  {
+                    "Name": "PetName",
+                    "Type": {
+                      "Type": "string"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Config": {
+        "OutputFormat": "json",
+        "Filepath": "nt/users.json"
+      }
+    }, {
+      "Field": {
+        "Fields": [{
+          "Name": "body",
+          "Type": {
+            "Reference": "sso_id",
+            "Template": "{\n\t\"query\": {\n\t\t\"binary\": {\n\t\t\t\"field\": \"USER.LoginName\",\n\t\t\t\"operator\": \"=\",\n\t\t\t\"value\": \"%s\"\n\t\t}\n\t}\n}"
+          }
+        }, {
+          "Name": "uri",
+          "Type": {
+            "Type": "const",
+            "Const": "/api/pdp-api-service/rest/find_extended"
+          }
+        }, {
+          "Name": "method",
+          "Type": {
+            "Type": "const",
+            "Const": "POST"
+          }
+        }, {
+          "Name": "headers",
+          "Type": {
+            "Type": "const",
+            "AsJson": true,
+            "Const": "{\"X-APPLICATION-TOKEN\": \"ab6bb04de8f8bd53e4c64569d76dc01cac4a80415d2dabb33fee336e37f83f2dfcfa5ef0165727d977c9b66fcd5217560fe776324509262b1e44b2f6973ef638f6faac3f21037fabe4065de0be734e279724d18a75f4cce5d422efda5b52dd8ebde159cadaaf46646c54886c8b8519688aade960d6a9f0036f17cf90eb2824c1\", \"User-Agent\": \"Pandora\"}"
+          }
+        }]
+      },
+      "Config": {
+        "OutputFormat": "json",
+        "Filepath": "nt/ammos.json"
+      }
+    }
+  ]
+}

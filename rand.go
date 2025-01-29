@@ -10,9 +10,10 @@ var (
 	rand *random.Rand
 )
 
+// nolint:gochecknoinits
 func init() {
-	src := random.NewSource(time.Now().UnixNano() / 2).(random.Source64)
-	rand = random.New(&lockedSource{src: src})
+	src, _ := random.NewSource(time.Now().UnixNano()).(random.Source64)
+	rand = random.New(&lockedSource{src: src}) // nolint:gosec
 }
 
 type lockedSource struct {
@@ -20,20 +21,21 @@ type lockedSource struct {
 	src random.Source64
 }
 
-func (r *lockedSource) Int63() (n int64) {
+func (r *lockedSource) Int63() int64 {
 	r.lk.Lock()
-	n = r.src.Int63()
+	n := r.src.Int63()
 	r.lk.Unlock()
-	return
+	return n
 }
 
-func (r *lockedSource) Uint64() (n uint64) {
+func (r *lockedSource) Uint64() uint64 {
 	r.lk.Lock()
-	n = r.src.Uint64()
+	n := r.src.Uint64()
 	r.lk.Unlock()
-	return
+	return n
 }
 
+// nolint:nonamedreturns
 func (r *lockedSource) Seed(seed int64) {
 	r.lk.Lock()
 	r.src.Seed(seed)
