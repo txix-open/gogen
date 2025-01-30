@@ -15,7 +15,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 
 FROM alpine:3.21
 
-RUN apk add --no-cache tzdata bash-completion jq
+RUN apk add --no-cache tzdata bash-completion vim nano jq
 RUN cp /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 RUN echo "Europe/Moscow" > /etc/timezone
 
