@@ -27,6 +27,9 @@ func NewCsvReader(cfg *csvDataSource) (*csvReader, error) {
 	defer func() { _ = fd.Close() }()
 
 	reader := csv.NewReader(bufio.NewReaderSize(fd, buffSize))
+	if cfg.CsvSeparator != "" {
+		reader.Comma = rune(cfg.CsvSeparator[0])
+	}
 	header, err := reader.Read()
 	if err != nil {
 		return nil, errors.WithMessagef(err, "read columnInde")
