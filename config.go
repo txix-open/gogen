@@ -17,8 +17,9 @@ type Config struct {
 }
 
 type csvDataSource struct {
-	Filepath    string `validate:"required"`
-	TargetField string `validate:"required"`
+	Filepath     string `validate:"required"`
+	TargetField  string `validate:"required"`
+	CsvSeparator string
 }
 
 type Entity struct {
