@@ -27,6 +27,7 @@ const (
 	OneOfType    = "oneof"
 	SequenceType = "sequence"
 	EmailType    = "email"
+	ExternalType = "external"
 )
 
 const (
@@ -35,20 +36,20 @@ const (
 
 var emptySharedFields = make(map[string]any)
 
-func (cfg *Config) GenerateSharedFields(extSrcReader *csvReader) map[string]any {
+func (cfg *Config) GenerateSharedFields() map[string]any {
 	sharedFields := make(map[string]any, len(cfg.SharedFields))
 	for _, field := range cfg.SharedFields {
 		if field.Name == "" {
 			fmt.Printf("invalid shared field %v: empty name", field)
 			continue
 		}
-		sharedFields[field.Name] = field.Generate(emptySharedFields, extSrcReader)
+		sharedFields[field.Name] = field.Generate(emptySharedFields)
 	}
 
 	return sharedFields
 }
 
-func (cfg *Config) GenerateEntities(writers []io.Writer) error {
+func (cfg *Config) GenerateEntities(writers []io.Writer) {
 	workersCount := runtime.NumCPU() * 2
 
 	sharedFieldsCh := make(chan map[string]any, chanBuffer)
@@ -64,24 +65,13 @@ func (cfg *Config) GenerateEntities(writers []io.Writer) error {
 		go newWriterWorker(ch, readersWg, writers[i])
 	}
 
-	var (
-		extCsvReader *csvReader
-		err          error
-	)
-	if cfg.ExternalCsvSource != nil {
-		extCsvReader, err = NewCsvReader(cfg.ExternalCsvSource)
-		if err != nil {
-			return errors.WithMessage(err, "new external csv source reader")
-		}
-	}
-
 	writersWg.Add(workersCount)
 	for range workersCount {
-		go newWorker(sharedFieldsCh, writersWg, cfg.Entities, readersChs, extCsvReader)
+		go newWorker(sharedFieldsCh, writersWg, cfg.Entities, readersChs)
 	}
 
 	for range cfg.TotalCount {
-		sharedFields := cfg.GenerateSharedFields(extCsvReader)
+		sharedFields := cfg.GenerateSharedFields()
 		sharedFieldsCh <- sharedFields
 	}
 
@@ -91,18 +81,15 @@ func (cfg *Config) GenerateEntities(writers []io.Writer) error {
 		close(readersChs[i])
 	}
 	readersWg.Wait()
-
-	return nil
 }
 
-func newWorker(fieldsCh <-chan map[string]any, wg *sync.WaitGroup, entities []Entity, writers []chan *bytes.Buffer,
-	extSrcReader *csvReader) {
+func newWorker(fieldsCh <-chan map[string]any, wg *sync.WaitGroup, entities []Entity, writers []chan *bytes.Buffer) {
 	defer wg.Done()
 
 	for fields := range fieldsCh {
 		for i := range entities {
 			entity := entities[i]
-			val, generated := entity.Generate(fields, extSrcReader)
+			val, generated := entity.Generate(fields)
 			if generated {
 				var (
 					buf *bytes.Buffer
@@ -125,7 +112,7 @@ func newWorker(fieldsCh <-chan map[string]any, wg *sync.WaitGroup, entities []En
 	}
 }
 
-func (ent *Entity) Generate(sharedFields map[string]any, extSrcReader *csvReader) (any, bool) {
+func (ent *Entity) Generate(sharedFields map[string]any) (any, bool) {
 	cfg := &ent.Config
 	if cfg.Count == 0 && cfg.Rate == 0 {
 		cfg.Rate = 100
@@ -139,7 +126,7 @@ func (ent *Entity) Generate(sharedFields map[string]any, extSrcReader *csvReader
 	}
 
 	atomic.AddInt64(&cfg.currentCount, 1)
-	return ent.Field.Generate(sharedFields, extSrcReader), true
+	return ent.Field.Generate(sharedFields), true
 }
 
 func (ent *Entity) CsvColumns() []string {
@@ -155,7 +142,7 @@ func (ent *Entity) CsvColumns() []string {
 }
 
 // nolint:cyclop
-func (f *Field) Generate(sharedFields map[string]any, extSrcReader *csvReader) any {
+func (f *Field) Generate(sharedFields map[string]any) any {
 	if f.NilChance > 0 && randPercent() <= f.NilChance {
 		return nil
 	}
@@ -163,7 +150,7 @@ func (f *Field) Generate(sharedFields map[string]any, extSrcReader *csvReader) a
 	if fields := f.Fields; fields != nil {
 		m := make(map[string]any, len(fields))
 		for _, f := range fields {
-			m[f.Name] = f.Generate(sharedFields, extSrcReader)
+			m[f.Name] = f.Generate(sharedFields)
 		}
 		return m
 	}
@@ -174,7 +161,7 @@ func (f *Field) Generate(sharedFields map[string]any, extSrcReader *csvReader) a
 			result := make([]any, 0, len(arr.Fixed))
 			for i := range arr.Fixed {
 				field := arr.Fixed[i]
-				val := field.Generate(sharedFields, extSrcReader)
+				val := field.Generate(sharedFields)
 				if val == nil {
 					continue
 				}
@@ -189,7 +176,7 @@ func (f *Field) Generate(sharedFields map[string]any, extSrcReader *csvReader) a
 		}
 		result := make([]any, 0, size)
 		for range size {
-			val := arr.Value.Generate(sharedFields, extSrcReader)
+			val := arr.Value.Generate(sharedFields)
 			if val == nil {
 				continue
 			}
@@ -200,11 +187,11 @@ func (f *Field) Generate(sharedFields map[string]any, extSrcReader *csvReader) a
 
 	if len(f.OneOfFields) > 0 {
 		i := rand.Intn(len(f.OneOfFields))
-		return f.OneOfFields[i].Generate(sharedFields, extSrcReader)
+		return f.OneOfFields[i].Generate(sharedFields)
 	}
 
 	if f.Type != nil {
-		val, err := f.Type.GenerateByType(sharedFields, extSrcReader)
+		val, err := f.Type.GenerateByType(sharedFields)
 		if err != nil {
 			fmt.Printf("invalid value: %v\n", err)
 		}
@@ -216,7 +203,7 @@ func (f *Field) Generate(sharedFields map[string]any, extSrcReader *csvReader) a
 }
 
 // nolint:nonamedreturns
-func (t *Type) GenerateByType(sharedFields map[string]any, extSrcReader *csvReader) (val any, err error) {
+func (t *Type) GenerateByType(sharedFields map[string]any) (val any, err error) {
 	switch {
 	case t.Reference != "":
 		var ok bool
@@ -224,11 +211,6 @@ func (t *Type) GenerateByType(sharedFields map[string]any, extSrcReader *csvRead
 		if !ok {
 			return nil, errors.Errorf("reference %s not found\n", t.Reference)
 		}
-	case t.FromExternalSource:
-		if extSrcReader == nil {
-			return nil, errors.Errorf("external data source is not set")
-		}
-		val = extSrcReader.ReadRandom()
 	default:
 		val, err = t.generateSelf()
 		if err != nil {
@@ -250,7 +232,7 @@ func (t *Type) GenerateByType(sharedFields map[string]any, extSrcReader *csvRead
 	return val, err
 }
 
-// nolint:cyclop,nonamedreturns
+// nolint:cyclop,nonamedreturns,funlen
 func (t *Type) generateSelf() (val any, err error) {
 	switch t.Type {
 	case StringType:
@@ -297,6 +279,15 @@ func (t *Type) generateSelf() (val any, err error) {
 		} else {
 			val, err = v, nil
 		}
+	case ExternalType:
+		if t.ExternalCsvSource == nil {
+			return nil, errors.New("nil ExternalCsvSource in config for 'external' type")
+		}
+		reader, err := t.ExternalCsvSource.ensureReader()
+		if err != nil {
+			return nil, err
+		}
+		return reader.ReadRandom(), nil
 	default:
 		return nil, errors.Errorf("unknown type %q", t.Type)
 	}

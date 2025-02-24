@@ -3,6 +3,8 @@ package main
 
 import (
 	"github.com/go-playground/validator/v10"
+	"sync"
+	"sync/atomic"
 )
 
 const (
@@ -10,16 +12,40 @@ const (
 )
 
 type Config struct {
-	TotalCount        int      `validate:"gt=0"`
-	SharedFields      []Field  `validate:"dive"`
-	Entities          []Entity `validate:"required,gt=0,dive"`
-	ExternalCsvSource *csvDataSource
+	TotalCount   int      `validate:"gt=0"`
+	SharedFields []Field  `validate:"dive"`
+	Entities     []Entity `validate:"required,gt=0,dive"`
 }
 
 type csvDataSource struct {
 	Filepath     string `validate:"required"`
 	TargetField  string `validate:"required"`
 	CsvSeparator string
+
+	lock   sync.Mutex
+	reader atomic.Pointer[csvReader]
+}
+
+func (s *csvDataSource) ensureReader() (*csvReader, error) {
+	reader := s.reader.Load()
+	if reader != nil {
+		return reader, nil
+	}
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	reader = s.reader.Load()
+	if reader != nil {
+		return reader, nil
+	}
+
+	reader, err := NewCsvReader(s)
+	if err != nil {
+		return nil, err
+	}
+	s.reader.Store(reader)
+	return reader, nil
 }
 
 type Entity struct {
@@ -53,16 +79,16 @@ type Type struct {
 	// TODO:
 	//  - MaskedString by gofakeit.Generate() or gofakeit.Numerify()
 	//  - Date interval by DateRange()
-	Const              interface{}   `json:",omitempty"`
-	OneOf              []interface{} `json:",omitempty"`
-	DateFormat         string        `json:",omitempty"`
-	Min                int           `json:",omitempty"`
-	Max                int           `json:",omitempty" validate:"omitempty"`
-	AsString           bool          `json:",omitempty"`
-	AsJson             bool          `json:",omitempty"`
-	FromExternalSource bool          `json:",omitempty"`
-	Template           string        `json:",omitempty"`
-	Reference          string        `json:",omitempty"`
+	Const             interface{}    `json:",omitempty"`
+	OneOf             []interface{}  `json:",omitempty"`
+	DateFormat        string         `json:",omitempty"`
+	Min               int            `json:",omitempty"`
+	Max               int            `json:",omitempty" validate:"omitempty"`
+	AsString          bool           `json:",omitempty"`
+	AsJson            bool           `json:",omitempty"`
+	ExternalCsvSource *csvDataSource `json:",omitempty"`
+	Template          string         `json:",omitempty"`
+	Reference         string         `json:",omitempty"`
 
 	seq int64
 }
