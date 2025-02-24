@@ -49,7 +49,7 @@ func (cfg *Config) GenerateSharedFields() map[string]any {
 	return sharedFields
 }
 
-func (cfg *Config) GenerateEntities(writers []io.Writer) error {
+func (cfg *Config) GenerateEntities(writers []io.Writer) {
 	workersCount := runtime.NumCPU() * 2
 
 	sharedFieldsCh := make(chan map[string]any, chanBuffer)
@@ -81,8 +81,6 @@ func (cfg *Config) GenerateEntities(writers []io.Writer) error {
 		close(readersChs[i])
 	}
 	readersWg.Wait()
-
-	return nil
 }
 
 func newWorker(fieldsCh <-chan map[string]any, wg *sync.WaitGroup, entities []Entity, writers []chan *bytes.Buffer) {
@@ -234,7 +232,7 @@ func (t *Type) GenerateByType(sharedFields map[string]any) (val any, err error) 
 	return val, err
 }
 
-// nolint:cyclop,nonamedreturns
+// nolint:cyclop,nonamedreturns,funlen
 func (t *Type) generateSelf() (val any, err error) {
 	switch t.Type {
 	case StringType:

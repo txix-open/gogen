@@ -69,10 +69,7 @@ func main() {
 	}
 
 	if check {
-		err := checkCommand(config)
-		if err != nil {
-			fmt.Printf("check command: %v\n", err)
-		}
+		checkCommand(config)
 		return
 	}
 
@@ -82,19 +79,14 @@ func main() {
 	}
 }
 
-func checkCommand(config *Config) error {
+func checkCommand(config *Config) {
 	writers := make([]io.Writer, 0, len(config.Entities))
 	for range config.Entities {
 		writers = append(writers, io.Discard)
 	}
 
 	config.TotalCount = 5
-	err := config.GenerateEntities(writers)
-	if err != nil {
-		return errors.WithMessage(err, "generate entities")
-	}
-
-	return nil
+	config.GenerateEntities(writers)
 }
 
 func generateCommand(config *Config) error {
@@ -143,10 +135,7 @@ func generateCommand(config *Config) error {
 	}
 
 	now := time.Now()
-	err := config.GenerateEntities(writers)
-	if err != nil {
-		return errors.WithMessage(err, "generate entities")
-	}
+	config.GenerateEntities(writers)
 	fmt.Printf("Elapsed time: %v\n", time.Since(now))
 
 	return nil
