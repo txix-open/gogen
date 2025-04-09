@@ -2,9 +2,10 @@
 package main
 
 import (
-	"github.com/go-playground/validator/v10"
 	"sync"
 	"sync/atomic"
+
+	"github.com/go-playground/validator/v10"
 )
 
 const (
@@ -12,9 +13,15 @@ const (
 )
 
 type Config struct {
-	TotalCount   int      `validate:"gt=0"`
-	SharedFields []Field  `validate:"dive"`
-	Entities     []Entity `validate:"required,gt=0,dive"`
+	TotalCount   int        `validate:"gt=0"`
+	Alphabets    []alphabet `validate:"dive"`
+	SharedFields []Field    `validate:"dive"`
+	Entities     []Entity   `validate:"required,gt=0,dive"`
+}
+
+type alphabet struct {
+	Name   string `validate:"required"`
+	Values string `validate:"required"`
 }
 
 type csvDataSource struct {
@@ -52,6 +59,11 @@ type Entity struct {
 	Field           Field
 	Config          EntityConfig
 	csvColumnsCache []string
+	alphabets       map[string]string
+}
+
+func (ent *Entity) WithAlphabets(alphabets map[string]string) {
+	ent.alphabets = alphabets
 }
 
 type EntityConfig struct {
@@ -68,6 +80,7 @@ type EntityConfig struct {
 type Field struct {
 	Name        string  `json:",omitempty"`
 	NilChance   int     `json:",omitempty" validate:"gte=0,lte=100"`
+	Weight      float64 `json:",omitempty" validate:"gte=0,lte=1"`
 	Type        *Type   `json:",omitempty"`
 	Fields      []Field `json:",omitempty" validate:"dive"`
 	Array       *Array  `json:",omitempty"`
@@ -82,13 +95,14 @@ type Type struct {
 	Const             interface{}    `json:",omitempty"`
 	OneOf             []interface{}  `json:",omitempty"`
 	DateFormat        string         `json:",omitempty"`
-	Min               int            `json:",omitempty"`
-	Max               int            `json:",omitempty" validate:"omitempty"`
+	Min               any            `json:",omitempty"`
+	Max               any            `json:",omitempty" validate:"omitempty"`
 	AsString          bool           `json:",omitempty"`
 	AsJson            bool           `json:",omitempty"`
 	ExternalCsvSource *csvDataSource `json:",omitempty"`
 	Template          string         `json:",omitempty"`
 	Reference         string         `json:",omitempty"`
+	Alphabet          string         `json:",omitempty"`
 
 	seq int64
 }
