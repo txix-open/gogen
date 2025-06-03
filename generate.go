@@ -6,6 +6,7 @@ import (
 	json2 "encoding/json"
 	"fmt"
 	"io"
+	"math/rand/v2"
 	"runtime"
 	"slices"
 	"strings"
@@ -15,7 +16,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/brianvoe/gofakeit/v5"
+	"github.com/brianvoe/gofakeit/v7"
 )
 
 const (
@@ -264,7 +265,7 @@ func (t *Type) generateByAlphabet(alphabets map[string][]rune) (any, error) {
 	var b strings.Builder
 	b.Grow(length)
 	for range length {
-		i := rand.Intn(len(alphabet))
+		i := rand.IntN(len(alphabet))
 		b.WriteRune(alphabet[i])
 	}
 
@@ -299,7 +300,7 @@ func (t *Type) generateSelf(alphabets map[string][]rune) (val any, err error) {
 		if len(t.OneOf) == 0 {
 			return nil, errors.New("zero oneOf values")
 		}
-		i := rand.Intn(len(t.OneOf))
+		i := rand.IntN(len(t.OneOf))
 		return t.OneOf[i], nil
 	case SequenceType:
 		val, err = t.generateSequence()
@@ -311,7 +312,7 @@ func (t *Type) generateSelf(alphabets map[string][]rune) (val any, err error) {
 		if err != nil {
 			return nil, err
 		}
-		return reader.ReadRandom(), nil
+		return reader.Read(), nil
 	default:
 		return nil, errors.Errorf("unknown type %q", t.Type)
 	}
@@ -423,7 +424,7 @@ func generateRandomOneOfField(oneOf []Field, sharedFields map[string]any, alphab
 	if oneOf[0].Weight > 0 {
 		return generateRandomWeightedOneOfField(oneOf, sharedFields, alphabets)
 	}
-	i := rand.Intn(len(oneOf))
+	i := rand.IntN(len(oneOf))
 	return oneOf[i].Generate(sharedFields, alphabets), nil
 }
 
@@ -449,17 +450,17 @@ func randRange(min, max int) int {
 	if max == min {
 		return max
 	}
-	val := rand.Intn(max-min) + min
+	val := rand.IntN(max-min) + min
 	return val
 }
 
 func randPercent() int {
-	return rand.Intn(101)
+	return rand.IntN(101)
 }
 
 func randDate() time.Time {
 	now := time.Now().Unix()
-	randOffset := rand.Int31() / 2
+	randOffset := rand.Int32() / 2
 
 	date := time.Unix(now-int64(randOffset), 0)
 	return date

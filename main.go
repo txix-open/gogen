@@ -6,11 +6,12 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
+	"github.com/txix-open/isp-kit/infra"
+	"github.com/txix-open/isp-kit/infra/pprof"
 	"io"
 	"os"
 	"time"
 
-	"github.com/brianvoe/gofakeit/v5"
 	"github.com/go-playground/validator/v10"
 	io2 "github.com/integration-system/isp-io"
 	"github.com/pkg/errors"
@@ -20,18 +21,19 @@ var (
 	configPath = "config.json"
 	forceWrite = false
 	check      = false
+	pprofPort  = 0
 )
 
 const (
-	bufSize = 10 << 10
+	bufSize = 32 * 1024
 )
 
+//nolint:funlen
 func main() {
-	gofakeit.Seed(time.Now().UnixNano())
-
 	flag.StringVar(&configPath, "config", "config.json", "config path")
 	flag.BoolVar(&forceWrite, "force", false, "overwrite previous generated files")
 	flag.BoolVar(&check, "check", false, "validate config")
+	flag.IntVar(&pprofPort, "pprofPort", 0, "pprof port, default = 0 - disabled")
 
 	flag.CommandLine.SetOutput(os.Stdout)
 	flag.Parse()
@@ -66,6 +68,13 @@ func main() {
 	case err != nil:
 		fmt.Println(errors.WithMessage(err, "unexpected error"))
 		return
+	}
+
+	if pprofPort != 0 {
+		infraServer := infra.NewServer()
+		pprof.RegisterHandlers("/internal", infraServer)
+		go infraServer.ListenAndServe(fmt.Sprintf(":%d", pprofPort)) //nolint:errcheck
+		fmt.Printf("pprof server listening on http://127.0.0.1:%d/internal/debug/pprof\n", pprofPort)
 	}
 
 	if check {
