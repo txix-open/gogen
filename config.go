@@ -25,9 +25,10 @@ type alphabet struct {
 }
 
 type csvDataSource struct {
-	Filepath     string `validate:"required"`
-	TargetField  string `validate:"required"`
-	CsvSeparator string
+	Filepath          string `validate:"required"`
+	TargetField       string `validate:"required"`
+	CsvSeparator      string
+	DisableRowShuffle bool
 
 	lock   sync.Mutex
 	reader atomic.Pointer[csvReader]
