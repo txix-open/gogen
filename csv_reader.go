@@ -7,6 +7,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"slices"
+	"sync"
 
 	"github.com/pkg/errors"
 )
@@ -19,6 +20,7 @@ type csvReader struct {
 	values           []string
 	curIdx           int
 	isReadRandomMode bool
+	locker           sync.Locker
 }
 
 func NewCsvReader(cfg *csvDataSource) (*csvReader, error) {
@@ -38,9 +40,10 @@ func NewCsvReader(cfg *csvDataSource) (*csvReader, error) {
 	}
 
 	return &csvReader{
-		curIdx:           -1,
+		curIdx:           0,
 		isReadRandomMode: !cfg.DisableReadRandomMode,
 		values:           values,
+		locker:           &sync.Mutex{},
 	}, nil
 }
 
@@ -57,8 +60,11 @@ func (r *csvReader) readRandom() string {
 }
 
 func (r *csvReader) readCircular() string {
-	r.curIdx = (r.curIdx + 1) % len(r.values)
-	return r.values[r.curIdx]
+	r.locker.Lock()
+	cur := r.curIdx
+	r.curIdx = (cur + 1) % len(r.values)
+	r.locker.Unlock()
+	return r.values[cur]
 }
 
 func loadCsvValuesInMem(reader *csv.Reader, targetField string) ([]string, error) {

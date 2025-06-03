@@ -28,6 +28,7 @@ const (
 	bufSize = 32 * 1024
 )
 
+//nolint:funlen
 func main() {
 	flag.StringVar(&configPath, "config", "config.json", "config path")
 	flag.BoolVar(&forceWrite, "force", false, "overwrite previous generated files")
@@ -72,7 +73,7 @@ func main() {
 	if pprofPort != 0 {
 		infraServer := infra.NewServer()
 		pprof.RegisterHandlers("/internal", infraServer)
-		go infraServer.ListenAndServe(fmt.Sprintf(":%d", pprofPort))
+		go infraServer.ListenAndServe(fmt.Sprintf(":%d", pprofPort)) //nolint:errcheck
 		fmt.Printf("pprof server listening on http://127.0.0.1:%d/internal/debug/pprof\n", pprofPort)
 	}
 
