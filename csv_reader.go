@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/csv"
 	"io"
-	random "math/rand"
+	"math/rand/v2"
 	"os"
 	"slices"
 
@@ -52,7 +52,7 @@ func (r *csvReader) Read() string {
 }
 
 func (r *csvReader) readRandom() string {
-	r.curIdx = random.Intn(len(r.values)) // nolint:gosec
+	r.curIdx = rand.IntN(len(r.values)) // nolint:gosec
 	return r.values[r.curIdx]
 }
 
