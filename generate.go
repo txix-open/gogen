@@ -311,7 +311,7 @@ func (t *Type) generateSelf(alphabets map[string][]rune) (val any, err error) {
 		if err != nil {
 			return nil, err
 		}
-		return reader.ReadRandom(), nil
+		return reader.Read(), nil
 	default:
 		return nil, errors.Errorf("unknown type %q", t.Type)
 	}
