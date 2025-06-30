@@ -104,6 +104,7 @@ type Type struct {
 	Template          string         `json:",omitempty"`
 	Reference         string         `json:",omitempty"`
 	Alphabet          string         `json:",omitempty"`
+	GeoJson           *GeoJson       `json:",omitempty"`
 
 	seq int64
 }
