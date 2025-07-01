@@ -1,7 +1,6 @@
 package main
 
 import (
-	json2 "encoding/json"
 	"github.com/pkg/errors"
 	"math/rand"
 
@@ -113,7 +112,7 @@ func (t *Type) generateGeoJSON() (any, error) {
 		"geometry":   geometry,
 	}
 
-	b, err := json2.Marshal(geoJSON)
+	b, err := json.Marshal(geoJSON)
 	if err != nil {
 		return nil, errors.WithMessage(err, "marshal geo json")
 	}
