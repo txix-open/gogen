@@ -93,8 +93,8 @@ type Type struct {
 	// TODO:
 	//  - MaskedString by gofakeit.Generate() or gofakeit.Numerify()
 	//  - Date interval by DateRange()
-	Const             interface{}    `json:",omitempty"`
-	OneOf             []interface{}  `json:",omitempty"`
+	Const             any            `json:",omitempty"`
+	OneOf             []any          `json:",omitempty"`
 	DateFormat        string         `json:",omitempty"`
 	Min               any            `json:",omitempty"`
 	Max               any            `json:",omitempty" validate:"omitempty"`
@@ -104,6 +104,7 @@ type Type struct {
 	Template          string         `json:",omitempty"`
 	Reference         string         `json:",omitempty"`
 	Alphabet          string         `json:",omitempty"`
+	GeoJson           *GeoJson       `json:",omitempty"`
 
 	seq int64
 }

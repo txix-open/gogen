@@ -1,3 +1,5 @@
+### v2.6.0
+* Добавлен тип `geo_json`
 ### v2.5.0
 * миграция на `rand/v2` для ускорения генерации
 * добавлена опция `ExternalCsvSource.DisableReadRandomMode`.
