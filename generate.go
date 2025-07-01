@@ -30,6 +30,7 @@ const (
 	SequenceType = "sequence"
 	EmailType    = "email"
 	ExternalType = "external"
+	GeoJsonType  = "geo_json"
 )
 
 const (
@@ -313,6 +314,8 @@ func (t *Type) generateSelf(alphabets map[string][]rune) (val any, err error) {
 			return nil, err
 		}
 		return reader.Read(), nil
+	case GeoJsonType:
+		val, err = t.generateGeoJSON()
 	default:
 		return nil, errors.Errorf("unknown type %q", t.Type)
 	}
